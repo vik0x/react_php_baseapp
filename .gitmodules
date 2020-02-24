@@ -1,0 +1,6 @@
+[submodule "back"]
+	path = back
+	url = git@github.com:vik0x/php_core.git
+[submodule "laradock"]
+	path = laradock
+	url = https://github.com/Laradock/laradock.git
