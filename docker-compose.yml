@@ -1,0 +1,100 @@
+version: '3'
+
+services:
+  api:
+    container_name: api
+    build: 
+      context: ./back
+      dockerfile: api.dockerfile
+    volumes: 
+      - ./back:/var/www
+      - vendor:/var/www/vendor
+    depends_on:
+      - psql
+    networks: 
+      - backend
+      
+  server:
+    image: nginx:alpine
+    restart: unless-stopped
+    tty: true
+    volumes: 
+      - ./back:/var/www
+      - ./nginx/conf.d/app.conf:/etc/nginx/conf.d/app.conf
+    ports: 
+      - ${NGINX_PORT}:8080
+    depends_on: 
+      - api
+    networks:
+      - backend
+
+  psql:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${PSQL_USER}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
+      POSTGRES_DB: ${PSQL_DB}
+    tty: true
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - ${PSQL_PORT}:5432
+    networks:
+      - backend
+
+  adminer:
+    depends_on: 
+      - psql
+    image: adminer
+    restart: always
+    ports:
+      - ${ADMINER_PORT}:8080
+    networks: 
+      - backend
+
+  # api_php_core:
+  #   build:
+  #     context: ./
+  #     dockerfile: api.dockerfile
+  #   container_name: api_php_core
+  #   restart: unless-stopped
+  #   tty: true
+  #   environment:
+  #     SERVICE_NAME: api
+  #     SERVICE_TAGS: dev
+  #   working_dir: /var/www
+  #   volumes:
+  #      - ./:/var/www
+  #   networks:
+  #     - backend-net
+  #   depends_on:
+  #     - psql
+ 
+  # webserver_php_core:
+  #   image: nginx:alpine
+  #   container_name: webserver_php_core
+  #   restart: unless-stopped
+  #   tty: true
+  #   ports:
+  #     - "7000:8080"      
+  #   volumes:
+  #     - ./:/var/www
+  #     - ./nginx/conf.d/:/etc/nginx/conf.d/
+  #   networks:
+  #     - backend-net
+  #   depends_on:
+  #     - psql
+
+volumes: 
+  db:
+  vendor:
+
+#Docker Networks
+networks:
+  backend:
+    driver: bridge
+
+#Volumes
+# volumes:
+#   dbdata:
