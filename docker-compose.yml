@@ -7,19 +7,35 @@ services:
       context: ./back
       dockerfile: api.dockerfile
     volumes: 
-      - ./back:/var/www
-      - vendor:/var/www/vendor
+      - ./back:/var/www/back
+      - vendor:/var/www/back/vendor
     depends_on:
       - psql
     networks: 
       - backend
-      
+
+  interface:
+    container_name: interface
+    build: 
+      context: ./front
+      dockerfile: interface.dockerfile
+    volumes: 
+      - ./front:/var/www/front
+      - nodemodules:/var/www/front/node_modules
+    ports: 
+      - 4000:4000
+    depends_on:
+      - api
+    networks: 
+      - frontend
+
   server:
+    container_name: server
     image: nginx:alpine
     restart: unless-stopped
     tty: true
     volumes: 
-      - ./back:/var/www
+      - ./back:/var/www/back
       - ./nginx/conf.d/app.conf:/etc/nginx/conf.d/app.conf
     ports: 
       - ${NGINX_PORT}:8080
@@ -29,6 +45,7 @@ services:
       - backend
 
   psql:
+    container_name: psql
     image: postgres
     restart: always
     environment:
@@ -44,6 +61,7 @@ services:
       - backend
 
   adminer:
+    container_name: adminer
     depends_on: 
       - psql
     image: adminer
@@ -52,49 +70,16 @@ services:
       - ${ADMINER_PORT}:8080
     networks: 
       - backend
-
-  # api_php_core:
-  #   build:
-  #     context: ./
-  #     dockerfile: api.dockerfile
-  #   container_name: api_php_core
-  #   restart: unless-stopped
-  #   tty: true
-  #   environment:
-  #     SERVICE_NAME: api
-  #     SERVICE_TAGS: dev
-  #   working_dir: /var/www
-  #   volumes:
-  #      - ./:/var/www
-  #   networks:
-  #     - backend-net
-  #   depends_on:
-  #     - psql
- 
-  # webserver_php_core:
-  #   image: nginx:alpine
-  #   container_name: webserver_php_core
-  #   restart: unless-stopped
-  #   tty: true
-  #   ports:
-  #     - "7000:8080"      
-  #   volumes:
-  #     - ./:/var/www
-  #     - ./nginx/conf.d/:/etc/nginx/conf.d/
-  #   networks:
-  #     - backend-net
-  #   depends_on:
-  #     - psql
-
+# Volumes
 volumes: 
   db:
   vendor:
+  nodemodules:
 
 #Docker Networks
 networks:
   backend:
     driver: bridge
+  frontend:
+    driver: bridge  
 
-#Volumes
-# volumes:
-#   dbdata:
