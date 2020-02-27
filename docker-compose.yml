@@ -1,0 +1,85 @@
+version: '3'
+
+services:
+  api:
+    container_name: api
+    build: 
+      context: ./back
+      dockerfile: api.dockerfile
+    volumes: 
+      - ./back:/var/www/back
+      - vendor:/var/www/back/vendor
+    depends_on:
+      - psql
+    networks: 
+      - backend
+
+  interface:
+    container_name: interface
+    build: 
+      context: ./front
+      dockerfile: interface.dockerfile
+    volumes: 
+      - ./front:/var/www/front
+      - nodemodules:/var/www/front/node_modules
+    ports: 
+      - 4000:4000
+    depends_on:
+      - api
+    networks: 
+      - frontend
+
+  server:
+    container_name: server
+    image: nginx:alpine
+    restart: unless-stopped
+    tty: true
+    volumes: 
+      - ./back:/var/www/back
+      - ./nginx/conf.d/app.conf:/etc/nginx/conf.d/app.conf
+    ports: 
+      - ${NGINX_PORT}:8080
+    depends_on: 
+      - api
+    networks:
+      - backend
+
+  psql:
+    container_name: psql
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${PSQL_USER}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
+      POSTGRES_DB: ${PSQL_DB}
+    tty: true
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - ${PSQL_PORT}:5432
+    networks:
+      - backend
+
+  adminer:
+    container_name: adminer
+    depends_on: 
+      - psql
+    image: adminer
+    restart: always
+    ports:
+      - ${ADMINER_PORT}:8080
+    networks: 
+      - backend
+# Volumes
+volumes: 
+  db:
+  vendor:
+  nodemodules:
+
+#Docker Networks
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge  
+
